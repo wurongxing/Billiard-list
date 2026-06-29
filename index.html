@@ -1206,9 +1206,11 @@
       els.exportBtn.addEventListener("click", exportRadar);
       window.addEventListener("resize", () => window.requestAnimationFrame(() => state.latestReport && drawRadar(state.latestReport.dimensions)));
 
-      loadDatabase().catch((error) => {
-        console.error(error);
-        els.dbStatus.textContent = "规则库读取失败";
+      window.addEventListener("DOMContentLoaded", () => {
+        loadDatabase().catch((error) => {
+          console.error(error);
+          els.dbStatus.textContent = "规则库读取失败";
+        });
       });
     </script>
   
