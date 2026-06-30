@@ -101,26 +101,6 @@
         letter-spacing: 0;
       }
 
-      .db-status {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: var(--muted);
-        font-size: 13px;
-        white-space: nowrap;
-      }
-
-      .dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--gold);
-      }
-
-      .dot.ready {
-        background: var(--teal);
-      }
-
       .workspace {
         display: grid;
         grid-template-columns: 360px minmax(0, 1fr);
@@ -500,10 +480,6 @@
           flex-direction: column;
         }
 
-        .db-status {
-          white-space: normal;
-        }
-
         .score-row {
           grid-template-columns: 48px 1fr 52px;
         }
@@ -539,10 +515,6 @@
             </svg>
           </div>
           <h1>XTOS 六维测评</h1>
-        </div>
-        <div class="db-status">
-          <span class="dot" id="statusDot"></span>
-          <span id="dbStatus">规则库连接中</span>
         </div>
       </header>
 
@@ -670,8 +642,6 @@
       };
 
       const els = {
-        statusDot: document.querySelector("#statusDot"),
-        dbStatus: document.querySelector("#dbStatus"),
         scoreList: document.querySelector("#scoreList"),
         dimensionTable: document.querySelector("#dimensionTable"),
         canvas: document.querySelector("#radarCanvas"),
@@ -716,9 +686,6 @@
         state.db = JSON.parse(embeddedDatabase.textContent);
         initializeScores(5);
         renderInputs();
-        els.statusDot.classList.add("ready");
-        const totalRules = Object.values(state.db.tables || {}).reduce((sum, rows) => sum + rows.length, 0);
-        els.dbStatus.textContent = `已内置 ${state.db.sourceWorkbook || "规则库"} · ${totalRules} 条规则`;
         update();
       }
 
@@ -1246,7 +1213,7 @@
       window.addEventListener("DOMContentLoaded", () => {
         loadDatabase().catch((error) => {
           console.error(error);
-          els.dbStatus.textContent = "规则库读取失败";
+          showToast("规则库读取失败");
         });
       });
     </script>
