@@ -456,6 +456,14 @@
         margin-top: 8px;
       }
 
+      .source {
+        display: none !important;
+      }
+
+      #courseLogic {
+        white-space: pre-line;
+      }
+
       .toast {
         position: fixed;
         right: 18px;
@@ -1154,7 +1162,7 @@
         els.weaknessMethod.textContent = report.weakness.method;
         els.weaknessSource.textContent = report.weakness.source;
         els.courseName.textContent = report.course.name;
-        els.courseLogic.textContent = `${report.course.logic} ${report.course.suitable}`;
+        els.courseLogic.textContent = [report.course.logic, report.course.suitable].filter(Boolean).join("\n");
         els.hourReason.textContent = `${report.hour.reason} ${report.hour.sales}`;
         els.hours.textContent = `${report.hour.hours}节`;
         els.courseSource.textContent = `${report.course.source} / ${report.hour.source}`;
