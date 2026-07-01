@@ -152,7 +152,23 @@
       .actions {
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
+        justify-content: flex-end;
         gap: 8px;
+      }
+
+      .primary-button {
+        min-height: 38px;
+        border: 0;
+        border-radius: 8px;
+        padding: 0 14px;
+        color: #fff;
+        background: var(--teal);
+        font: inherit;
+        font-size: 14px;
+        font-weight: 750;
+        cursor: pointer;
+        box-shadow: 0 10px 20px rgba(20, 125, 126, 0.18);
       }
 
       .icon-button {
@@ -175,6 +191,12 @@
         transform: translateY(-1px);
         border-color: rgba(20, 125, 126, 0.45);
         box-shadow: 0 10px 20px rgba(31, 48, 38, 0.08);
+      }
+
+      .icon-button[hidden],
+      .result-grid[hidden],
+      .dimension-table[hidden] {
+        display: none !important;
       }
 
       .score-list {
@@ -211,7 +233,7 @@
         margin: 0;
         background: transparent;
         cursor: pointer;
-        touch-action: none;
+        touch-action: pan-y;
       }
 
       input[type="range"]::-webkit-slider-runnable-track {
@@ -582,25 +604,26 @@
           <div class="panel-head">
             <h2>六维评分</h2>
             <div class="actions">
+              <button class="primary-button" id="generateBtn" type="button">生成报告</button>
               <button class="icon-button" id="resetBtn" type="button" title="重置" aria-label="重置">
                 <svg viewBox="0 0 24 24" fill="none">
                   <path d="M4 4v6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
                   <path d="M5.3 14a7 7 0 1 0 1.8-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                 </svg>
               </button>
-              <button class="icon-button" id="copyBtn" type="button" title="复制报告" aria-label="复制报告">
+              <button class="icon-button" id="copyBtn" type="button" title="复制报告" aria-label="复制报告" hidden>
                 <svg viewBox="0 0 24 24" fill="none">
                   <path d="M9 9h10v11H9z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
                   <path d="M5 15H4V4h11v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
               </button>
-              <button class="icon-button" id="exportBtn" type="button" title="导出雷达图" aria-label="导出雷达图">
+              <button class="icon-button" id="exportBtn" type="button" title="导出雷达图" aria-label="导出雷达图" hidden>
                 <svg viewBox="0 0 24 24" fill="none">
                   <path d="M12 3v12m0 0 4-4m-4 4-4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
                   <path d="M5 18v2h14v-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
               </button>
-              <button class="icon-button" id="exportPageBtn" type="button" title="导出整页大图" aria-label="导出整页大图">
+              <button class="icon-button" id="exportPageBtn" type="button" title="导出整页大图" aria-label="导出整页大图" hidden>
                 <svg viewBox="0 0 24 24" fill="none">
                   <path d="M4 5h16v14H4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
                   <path d="M8 9h8M8 13h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
@@ -610,10 +633,10 @@
             </div>
           </div>
           <div class="score-list" id="scoreList"></div>
-          <div class="dimension-table" id="dimensionTable"></div>
+          <div class="dimension-table" id="dimensionTable" hidden></div>
         </aside>
 
-        <section class="result-grid">
+        <section class="result-grid" id="resultsPanel" hidden>
           <div class="panel chart-panel">
             <div class="metrics">
               <div class="metric">
@@ -739,11 +762,13 @@
         db: null,
         scores: {},
         latestReport: null,
+        reportGenerated: false,
         exportObjectUrl: null,
         colors: ["#147d7e", "#2f65ad", "#be5b58", "#b07d20", "#4d783e", "#7057a5"]
       };
 
       const els = {
+        resultsPanel: document.querySelector("#resultsPanel"),
         scoreList: document.querySelector("#scoreList"),
         dimensionTable: document.querySelector("#dimensionTable"),
         canvas: document.querySelector("#radarCanvas"),
@@ -774,6 +799,7 @@
         coachText: document.querySelector("#coachText"),
         coachReminder: document.querySelector("#coachReminder"),
         coachSource: document.querySelector("#coachSource"),
+        generateBtn: document.querySelector("#generateBtn"),
         resetBtn: document.querySelector("#resetBtn"),
         copyBtn: document.querySelector("#copyBtn"),
         exportBtn: document.querySelector("#exportBtn"),
@@ -793,7 +819,7 @@
         state.db = JSON.parse(embeddedDatabase.textContent);
         initializeScores(5);
         renderInputs();
-        update();
+        setReportVisibility(false);
       }
 
       function initializeScores(defaultValue = 5) {
@@ -830,7 +856,16 @@
         for (const paired of els.scoreList.querySelectorAll(`[data-id="${CSS.escape(id)}"]`)) {
           if (paired !== input) paired.value = state.scores[id];
         }
+        if (state.reportGenerated) {
+          setReportVisibility(false);
+          showToast("分数已调整，点击生成报告");
+        }
+      }
+
+      function generateReport() {
+        setReportVisibility(true);
         update();
+        showToast("报告已生成");
       }
 
       function update() {
@@ -840,6 +875,15 @@
         renderMetrics(report);
         renderDimensionTable(dimensions);
         drawRadar(dimensions);
+      }
+
+      function setReportVisibility(isVisible) {
+        state.reportGenerated = isVisible;
+        els.resultsPanel.hidden = !isVisible;
+        els.dimensionTable.hidden = !isVisible;
+        els.copyBtn.hidden = !isVisible;
+        els.exportBtn.hidden = !isVisible;
+        els.exportPageBtn.hidden = !isVisible;
       }
 
       function getDimensionScores() {
@@ -1239,7 +1283,10 @@
       }
 
       function copyReport() {
-        if (!state.latestReport) return;
+        if (!state.latestReport || !state.reportGenerated) {
+          showToast("请先生成报告");
+          return;
+        }
         const report = state.latestReport;
         const text = [
           "XTOS 六维测评报告",
@@ -1262,6 +1309,10 @@
       }
 
       function exportRadar() {
+        if (!state.latestReport || !state.reportGenerated) {
+          showToast("请先生成报告");
+          return;
+        }
         const link = document.createElement("a");
         link.download = "XTOS六维雷达图.png";
         link.href = els.canvas.toDataURL("image/png");
@@ -1269,7 +1320,10 @@
       }
 
       async function exportFullPage() {
-        if (!state.latestReport) return;
+        if (!state.latestReport || !state.reportGenerated) {
+          showToast("请先生成报告");
+          return;
+        }
 
         showToast("正在生成整页大图");
         await new Promise((resolve) => window.requestAnimationFrame(resolve));
@@ -1298,7 +1352,6 @@
             const dataUrl = canvas.toDataURL("image/png");
             link.download = "XTOS六维测评整页.png";
             link.href = dataUrl;
-            link.click();
             showExportPreview(dataUrl, "XTOS六维测评整页.png");
             window.scrollTo(scrollX, scrollY);
             showToast("整页大图已生成");
@@ -1385,7 +1438,6 @@
           const link = document.createElement("a");
           link.download = "XTOS六维测评整页.png";
           link.href = canvas.toDataURL("image/png");
-          link.click();
           showExportPreview(link.href, "XTOS六维测评整页.png");
           showToast("整页大图已生成");
         } catch (error) {
@@ -1393,7 +1445,6 @@
           const link = document.createElement("a");
           link.download = "XTOS六维测评整页.svg";
           link.href = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
-          link.click();
           showExportPreview(link.href, "XTOS六维测评整页.svg");
           showToast("已生成 SVG 整页大图");
         }
@@ -1457,10 +1508,14 @@
       }
 
       els.scoreList.addEventListener("input", onScoreInput);
+      els.generateBtn.addEventListener("click", generateReport);
       els.resetBtn.addEventListener("click", () => {
         initializeScores(5);
         for (const input of els.scoreList.querySelectorAll("input")) input.value = 5;
-        update();
+        state.latestReport = null;
+        setReportVisibility(false);
+        hideExportPreview();
+        showToast("已重置分数");
       });
       els.copyBtn.addEventListener("click", copyReport);
       els.exportBtn.addEventListener("click", exportRadar);
